@@ -1,0 +1,10 @@
+streamlit
+pandas
+numpy
+openai
+chromadb
+langchain
+langchain-openai
+langsmith
+matplotlib
+seaborn
