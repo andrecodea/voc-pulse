@@ -1,7 +1,7 @@
 # pages/1_📊_Dashboard.py
 import streamlit as st
 import pandas as pd
-from src.analysis.metrics import calculate_kpis # Importa nossa função de KPIs
+from src.analysis.metrics import calculate_kpis
 from src.visualization.charts import (
     plot_sentiment_distribution,
     plot_semantic_pie_chart,
@@ -12,19 +12,16 @@ from src.visualization.charts import (
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Dashboard de Performance")
 
-# --- 1. Guarda de Segurança (Verifica se os dados estão prontos) ---
-# Se o usuário abrir esta página direto, os dados não estarão prontos
-if 'data_loaded' not in st.session_state:
+# --- 1. Guarda de Segurança ---
+if 'data_loaded' not in st.session_state or st.session_state.df_enriched.empty:
     st.error("Os dados não foram carregados. Por favor, vá para a Home Page (app.py) primeiro.")
-    st.stop() # Para a execução
+    st.stop()
 
 # --- 2. Pega os Dados do Cache ---
-# Pega o DataFrame que o app.py preparou
 df = st.session_state.df_enriched
 
-# --- 3. Renderiza os KPIs ---
+# --- 3. Renderiza os KPIs (Como antes) ---
 st.subheader("KPIs Gerais")
-# Chama nossa função de métricas
 kpis = calculate_kpis(df)
 col1, col2, col3 = st.columns(3)
 col1.metric("Total de Feedbacks", kpis["total_feedbacks"])
@@ -33,10 +30,19 @@ col3.metric("Taxa de Positividade", f"{kpis['pct_positivo']:.1f}%")
 
 st.markdown("---")
 
-# --- 4. Renderiza os Gráficos ---
-# Chama as funções que criamos no charts.py
-plot_sentiment_distribution(df)
+# --- 4. LINHA 1: Gráficos de Análise (A SUA MUDANÇA) ---
+# Cria as duas colunas
+col_grafico_1, col_grafico_2 = st.columns(2)
+
+# Coluna da Esquerda (Gráfico de Barras)
+with col_grafico_1:
+    plot_sentiment_distribution(df)
+
+# Coluna da Direita (Gráfico de Pizza)
+with col_grafico_2:
+    plot_semantic_pie_chart(df)
+
 st.markdown("---")
-plot_semantic_pie_chart(df)
-st.markdown("---")
+
+# --- 5. LINHA 2: Word Cloud (Como você pediu, em 1 coluna) ---
 plot_wordcloud_for_supplier(df)
