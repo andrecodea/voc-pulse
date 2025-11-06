@@ -67,7 +67,7 @@ def create_rag_chain(chroma_collection: chromadb.Collection):
     # 5. Chain
     rag_chain = RetrievalQA.from_chain_type(
         llm=llm,
-        chain_type="stuff", # ENFIA todo o contexto no prompt
+        chain_type="stuff", # ENFIA o contexto no prompt
         retriever=retriever,
         chain_type_kwargs={"prompt":prompt},
         return_source_documents=True
