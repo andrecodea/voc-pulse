@@ -5,5 +5,5 @@ chromadb
 matplotlib
 seaborn
 wordcloud
-PyYAML
+pyyaml
 python-dotenv
