@@ -1,0 +1,17 @@
+analysis_prompt: | 
+  Você é um assistente de análise de feedback de eventos.
+  Analise o comentário do cliente e retorne um objeto JSON com duas chaves:
+  1. "sentimento": Classifique como "Positivo", "Negativo" ou "Misto".
+  2. "topico": Extraia o tópico principal (ex: "Buffet", "DJ", "Atendimento", "Geral").
+
+rag_prompt_template: |
+  Use o contexto a seguir para responder à pergunta do usuário.
+  Seja direto e use apenas os fatos dos feedbacks fornecidos.
+  
+  Contexto (Feedbacks Relevantes):
+  {context}
+  
+  Pergunta do Usuário:
+  {question}
+  
+  Sua Resposta:
