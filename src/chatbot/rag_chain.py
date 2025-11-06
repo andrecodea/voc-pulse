@@ -1,14 +1,10 @@
-# === CHATBOT ===
+# src/chatbot/rag_chain.py
 import streamlit as st
 import yaml
 import chromadb
-from langchain_openai import ChatOpenAI
-from langchain_community.vectorstores import Chroma
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
-from langchain_openai import OpenAIEmbeddings
+from openai import OpenAI
 
-# 1. Importa configurações e prompts
+# Carrega configs e prompts
 try:
     with open("config/config.yaml", 'r') as f:
         config = yaml.safe_load(f)
@@ -18,59 +14,92 @@ try:
     RAG_PROMPT_TEMPLATE = prompts['rag_prompt_template']
     CHAT_MODEL = config['openai']['chat_model']
     EMBEDDING_MODEL = config['openai']['embedding_model']
-    COLLECTION_NAME = config['chroma']['collection_name']
 except FileNotFoundError as e:
     st.error(f"ERRO CRÍTICO: Arquivo de configuração não encontrado. {e}")
     st.stop()
 
-# 2. Cria a chain de RAG
-def create_rag_chain(chroma_collection: chromadb.Collection):
+
+class ManualRAGBot:
     """
-    Creates and returns a LangChain RAG chain connected with a local
-    ChromaDB vectorstore.
-    :param chroma_collection:
-    :return:
+    Esta classe substitui o LangChain.
+    Ela gerencia o RAG manualmente.
     """
 
-    # 1. Configura LLM e Embeddings com a API da OpenAI
-    try:
-        api_key = st.secrets["OPENAI_API_KEY"]
-        llm = ChatOpenAI(
-        model_name = CHAT_MODEL,
-        api_key=api_key,
-        temperature=0.3
+    def __init__(self, collection: chromadb.Collection):
+        try:
+            self.api_key = st.secrets["OPENAI_API_KEY"]
+            self.client = OpenAI(api_key=self.api_key)
+            self.collection = collection
+            print("INFO: RAGBot Manual inicializado com sucesso.")
+        except KeyError:
+            st.error("ERRO: Chave 'OPENAI_API_KEY' não encontrada.")
+            st.stop()
+        except Exception as e:
+            st.error(f"ERRO ao inicializar o RAGBot: {e}")
+            st.stop()
+
+    def _get_relevant_documents(self, query: str) -> list[str]:
+        """
+        Passo 1: Gera embedding para a query e busca no ChromaDB.
+        """
+        try:
+            # 1. Gera o embedding para a pergunta
+            response = self.client.embeddings.create(
+                model=EMBEDDING_MODEL,
+                input=query
+            )
+            query_embedding = response.data[0].embedding
+
+            # 2. Busca no ChromaDB usando o embedding
+            results = self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=5,
+                include=["documents"]
+            )
+
+            return results['documents'][0]  # Retorna a lista de textos
+
+        except Exception as e:
+            print(f"ERRO no Retrieval: {e}")
+            return []
+
+    def _generate_answer(self, query: str, context: list[str]) -> str:
+        """
+        Passo 2: Monta o prompt e chama o LLM da OpenAI.
+        """
+        # Junta os documentos em um único bloco de texto
+        context_str = "\n\n".join(context)
+
+        # Monta o prompt final
+        final_prompt = RAG_PROMPT_TEMPLATE.format(
+            context=context_str,
+            question=query
         )
-        embedding_function = OpenAIEmbeddings(model=EMBEDDING_MODEL, api_key=api_key)
-    except KeyError:
-        st.error("ERRO: Chave 'OPENAI_API_KEY' não encontrada em .streamlit/secrets.toml.")
-        st.stop()
-    except Exception as e:
-        st.error(f"ERRO ao inicializar LangChain: {e}")
-        st.stop()
 
-    # 2. Conectar o vectorstore com LangChain
-    vectorstore = Chroma(
-        client = chroma_collection._client,
-        collection_name = chroma_collection.name,
-        embedding_function=embedding_function
-    )
+        try:
+            # 3. Chama o Chat da OpenAI
+            response = self.client.chat.completions.create(
+                model=CHAT_MODEL,
+                messages=[
+                    {"role": "user", "content": final_prompt}
+                ],
+                temperature=0.3
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"ERRO na Geração: {e}")
+            return "Desculpe, ocorreu um erro ao gerar a resposta."
 
-    # 3. Busca os 5 melhores resultados
-    retriever = vectorstore.as_retriever(search_kwargs={"k":5})
+    def ask(self, query: str) -> str:
+        """
+        Função principal que executa o pipeline RAG.
+        """
+        # PASSO 1: RECUPERAÇÃO (Retrieval)
+        relevant_documents = self._get_relevant_documents(query)
 
-    # 4. Configura o PromptTemplate
-    prompt = PromptTemplate(
-        template = RAG_PROMPT_TEMPLATE,
-        input_variables=["context", "question"]
-    )
+        if not relevant_documents:
+            return "Desculpe, não encontrei nenhuma informação relevante sobre isso nos feedbacks."
 
-    # 5. Chain
-    rag_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff", # ENFIA o contexto no prompt
-        retriever=retriever,
-        chain_type_kwargs={"prompt":prompt},
-        return_source_documents=True
-    )
-    print("INFO: Chain RAG criada com sucesso.")
-    return rag_chain
+        # PASSO 2: GERAÇÃO (Generation)
+        answer = self._generate_answer(query, relevant_documents)
+        return answer

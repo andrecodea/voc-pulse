@@ -20,7 +20,7 @@ def plot_sentiment_distribution(df_enriched: pd.DataFrame):
     sns.barplot(
         x=sentiment_counts.index,
         y=sentiment_counts.values,
-        pallete=bar_colors,
+        palette=bar_colors,
         ax=ax
     )
 
@@ -72,27 +72,39 @@ def plot_semantic_pie_chart(df_enriched: pd.DataFrame):
         else:
             st.warning(f"Não há dados de sentimento para {fornecedor_selecionado}")
 
-custom_stopwords = set(STOPWORDS)
-custom_stopwords.update([
-"festa", "evento", "foi", "estava", "mas", "muito", "tudo", "como", "sobre",
-    "dj", "buffet", "comida", "musica", "atendimento", "serviço", "sempre",
-    "gostei", "achei", "bom", "ruim", "ótimo", "péssimo", "ok", "mas", "nao", "não",
-    "muito", "pouco", "frio", "quente", "pista"
-])
+
+PALAVRAS_CHAVE_FILTRO = [
+    # Positivas
+    "bom", "ótimo", "excelente", "maravilhoso", "perfeito", "incrível", "sensacional",
+    "gostei", "adorei", "amamos", "elogiaram", "elogio", "rápido", "atenciosos",
+    "profissional", "impecável", "delicioso", "saboroso", "quente", "animado",
+    "animou", "cheia", "legal", "top", "recomendo", "sucesso", "parabéns",
+
+    # Negativas
+    "ruim", "péssimo", "horrível", "desastre", "decepcionante", "chato", "fraco",
+    "problema", "erro", "errou", "rude", "grossa", "atrasado", "atraso", "demorou",
+    "frio", "fria", "morna", "vazia", "esquecível", "barulho", "repetitiva",
+    "absurdo", "estressante", "gordurosa", "sumiu", "esqueceu", "faltou", "azedo",
+
+    # Mistas / Neutras
+    "ok", "mediano", "razoável", "normal"
+]
+# Transforma a lista em um Set (conjunto) para busca 1000x mais rápida
+PALAVRAS_SET = set(PALAVRAS_CHAVE_FILTRO)
+
 
 def plot_wordcloud_for_supplier(df_enriched: pd.DataFrame):
     """
-    Generates an interactive WordCloud for a determined supplier
-    :param df_enriched:
-    :return:
+    Cria um Word Cloud interativo com filtro de sentimento E
+    usando a nossa Whitelist de palavras.
     """
-    st.subheader("Nuvem de Palavras (Word Cloud) por Fornecedor")
+    st.subheader("Nuvem de Palavras-Chave (Positivas/Negativas)")
 
-    # --- UI de Filtro (Copiada da Pizza, mas com chaves diferentes) ---
-    col1, col2 = st.columns(2)
+    # 2. A UI de filtros (3 colunas, como antes)
+    col1, col2, col3 = st.columns(3)
+
     with col1:
-        tipo_fornecedor_wc = st.selectbox("Escolha a Categoria:",
-                                          ["DJ", "Buffet"], key="wc_cat")
+        tipo_fornecedor_wc = st.selectbox("Categoria:", ["DJ", "Buffet"], key="wc_cat")
 
     if tipo_fornecedor_wc == "DJ":
         col_name_wc = "ID_Fornecedor_DJ"
@@ -102,34 +114,62 @@ def plot_wordcloud_for_supplier(df_enriched: pd.DataFrame):
     lista_fornecedores_wc = df_enriched[col_name_wc].unique()
 
     with col2:
-        fornecedor_selecionado_wc = st.selectbox(f"Selecione um {tipo_fornecedor_wc}:",
+        fornecedor_selecionado_wc = st.selectbox(f"Fornecedor:",
                                                  lista_fornecedores_wc, key="wc_sup")
+    with col3:
+        sentiment_filter = st.radio(
+            "Filtrar Sentimento:",
+            ["Todos", "Positivo", "Negativo", "Misto"],
+            key="wc_sent",
+            horizontal=True
+        )
 
-    # --- Lógica de Geração do Word Cloud ---
+    # 3. Lógica de filtragem atualizada
     if fornecedor_selecionado_wc:
-        # Filtra os comentários para o fornecedor
+
+        # 3.1. Filtra pelo Fornecedor
         df_filtrado_wc = df_enriched[df_enriched[col_name_wc] == fornecedor_selecionado_wc]
 
-        # Junta todos os comentários em um único super-texto
+        # 3.2. FILTRA PELO SENTIMENTO
+        if sentiment_filter != "Todos":
+            df_filtrado_wc = df_filtrado_wc[df_filtrado_wc['sentimento'] == sentiment_filter]
+
+        # 3.3. Junta todos os comentários em um super-texto
         text = " ".join(comentario for comentario in df_filtrado_wc.Comentario_Cliente)
 
-        if not text.strip():
-            st.warning(f"Não há comentários em texto para {fornecedor_selecionado_wc}.")
+        # --- MUDANÇA CRÍTICA: LÓGICA DA WHITELIST ---
+
+        # 3.4. Quebra o texto em palavras e filtra SÓ as que estão na nossa lista
+        palavras_filtradas = []
+        for palavra in text.lower().split():
+            palavra_limpa = palavra.strip(".,!?:;()[]{}")  # Limpa pontuação
+            if palavra_limpa in PALAVRAS_SET:
+                palavras_filtradas.append(palavra_limpa)
+
+        # 3.5. Junta as palavras filtradas de volta em um texto
+        texto_filtrado = " ".join(palavras_filtradas)
+
+        # ------------------------------------------------
+
+        if not texto_filtrado.strip():
+            st.warning(
+                f"Nenhuma palavra-chave (bom, ruim, etc.) encontrada para '{sentiment_filter}' em {fornecedor_selecionado_wc}.")
         else:
             try:
-                # Gera a nuvem de palavras
+                # 4. Gera a nuvem A PARTIR DO TEXTO FILTRADO
                 wordcloud = WordCloud(
                     width=800,
                     height=400,
                     background_color='white',
-                    stopwords=custom_stopwords,  # Usa nossa lista de stopwords
+                    # NÃO precisamos mais de 'stopwords', pois já filtramos!
+                    collocations=False,  # Evita juntar palavras (ex: "muito bom")
                     min_font_size=10
-                ).generate(text)
+                ).generate(texto_filtrado)  # <- Usa o texto novo
 
-                # Plota a nuvem no Streamlit
+                # 5. Plota a nuvem
                 fig, ax = plt.subplots(figsize=(10, 5))
                 ax.imshow(wordcloud, interpolation='bilinear')
-                ax.set_title(f"Palavras Mais Comuns para: {fornecedor_selecionado_wc}")
+                ax.set_title(f"Palavras-Chave (Sent: {sentiment_filter}) para: {fornecedor_selecionado_wc}")
                 ax.axis('off')
                 st.pyplot(fig)
 
