@@ -1,12 +1,13 @@
 # app.py (O Maestro)
 import streamlit as st
 import pandas as pd
-import sys
 from src.database.chroma_manager import initialize_chromadb
-from src.chatbot.rag_chain import create_rag_chain
+# --- MUDANÇA CRÍTICA ---
+from src.chatbot.rag_chain import ManualRAGBot  # Importa nossa nova classe
+
+# --- FIM DA MUDANÇA ---
 
 # --- 1. Configuração da Página ---
-# Define a configuração da página principal (Home)
 st.set_page_config(
     page_title="VoC Pulse | Home",
     page_icon="🌡️",
@@ -14,35 +15,25 @@ st.set_page_config(
 )
 
 
-# --- 2. Funções de Cache (O Coração do App) ---
-# Estas funções rodam APENAS UMA VEZ e salvam seus resultados.
+# --- 2. Funções de Cache ---
 
-@st.cache_data  # Cache para dados (ex: DataFrames)
+@st.cache_data
 def load_processed_data():
-    """
-    Carrega os dados PRÉ-PROCESSADOS do JSON.
-    Isso é rápido (instantâneo).
-    """
     try:
-        # Usamos 'lines=True' porque foi assim que o run_pipeline.py salvou
         df_enriched = pd.read_json("data/processed/data_enriched.json", lines=True)
         print("INFO: data_enriched.json carregado do cache.")
         return df_enriched
     except FileNotFoundError:
         st.error("ERRO CRÍTICO: 'data/processed/data_enriched.json' não encontrado.")
         st.error("Por favor, rode o script 'scripts/run_pipeline.py' primeiro!")
-        st.stop()  # Para a execução do app
+        st.stop()
     except Exception as e:
         st.error(f"Erro ao carregar data_enriched.json: {e}")
         st.stop()
 
 
-@st.cache_resource  # Cache para "recursos" (ex: conexões de DB, modelos de ML)
+@st.cache_resource
 def load_chromadb_collection(_df_enriched):
-    """
-    Inicializa o ChromaDB EM MEMÓRIA com nossos dados.
-    Roda apenas uma vez.
-    """
     if _df_enriched is not None:
         print("INFO: Carregando ChromaDB...")
         collection = initialize_chromadb(_df_enriched)
@@ -50,37 +41,33 @@ def load_chromadb_collection(_df_enriched):
     return None
 
 
-@st.cache_resource  # Cache para "recursos"
-def load_rag_chain(_chroma_collection):
+# --- MUDANÇA CRÍTICA ---
+@st.cache_resource
+def load_rag_bot(_chroma_collection):  # Renomeamos a função
     """
-    Cria a RAG Chain do LangChain.
+    Cria o nosso RAG Bot Manual.
     Roda apenas uma vez.
     """
     if _chroma_collection is not None:
-        print("INFO: Carregando RAG Chain...")
-        rag_chain = create_rag_chain(_chroma_collection)
-        return rag_chain
+        print("INFO: Carregando RAG Bot Manual...")
+        rag_bot = ManualRAGBot(_chroma_collection)  # Cria nossa classe
+        return rag_bot
     return None
 
 
 # --- 3. Execução do Carregamento (O "Maestro") ---
-# Este bloco 'if' é a chave. Ele só roda se os dados
-# ainda não estiverem na memória da sessão.
 if 'data_loaded' not in st.session_state:
     print("INFO: Carregando dados pela primeira vez...")
-
-    # Chama as funções cacheadas
     df_enriched = load_processed_data()
     chroma_collection = load_chromadb_collection(df_enriched)
-    rag_chain = load_rag_chain(chroma_collection)
-
-    # Salva tudo no 'session_state' para as outras páginas usarem
+    rag_bot = load_rag_bot(chroma_collection)  # Chama a nova função
     st.session_state.df_enriched = df_enriched
     st.session_state.chroma_collection = chroma_collection
-    st.session_state.rag_chain = rag_chain
-    st.session_state.data_loaded = True  # Marca que terminamos de carregar
+    st.session_state.rag_bot = rag_bot  # Salva o bot na sessão
+    st.session_state.data_loaded = True
+    # --- FIM DA MUDANÇA ---
 
-    print("INFO: Dados e modelos carregados e salvos no session_state.")
+print("INFO: Dados e modelos carregados e salvos no session_state.")
 
 # --- 4. Renderização da "Home Page" (app.py) ---
 # Esta é a UI da página principal
