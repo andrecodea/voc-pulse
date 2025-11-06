@@ -2,9 +2,12 @@ streamlit
 pandas
 numpy
 openai
+python-dotenv
 chromadb
 langchain
 langchain-openai
 langsmith
 matplotlib
 seaborn
+pyyaml
+wordcloud
