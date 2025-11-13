@@ -38,15 +38,11 @@ st.markdown("---")
 
 # --- 4. LINHA 1: Gráficos de Análise (A SUA MUDANÇA) ---
 # Cria as duas colunas
-col_grafico_1, col_grafico_2 = st.columns(2)
+plot_sentiment_distribution(df)
 
-# Coluna da Esquerda (Gráfico de Barras)
-with col_grafico_1:
-    plot_sentiment_distribution(df)
+st.markdown("---")
 
-# Coluna da Direita (Gráfico de Pizza)
-with col_grafico_2:
-    plot_semantic_pie_chart(df)
+plot_semantic_pie_chart(df)
 
 st.markdown("---")
 
