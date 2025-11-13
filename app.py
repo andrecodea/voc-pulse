@@ -56,16 +56,17 @@ def load_rag_bot(_chroma_collection):  # Renomeamos a função
 
 
 # --- 3. Execução do Carregamento (O "Maestro") ---
-if 'data_loaded' not in st.session_state:
-    print("INFO: Carregando dados pela primeira vez...")
-    df_enriched = load_processed_data()
-    chroma_collection = load_chromadb_collection(df_enriched)
-    rag_bot = load_rag_bot(chroma_collection)  # Chama a nova função
-    st.session_state.df_enriched = df_enriched
-    st.session_state.chroma_collection = chroma_collection
-    st.session_state.rag_bot = rag_bot  # Salva o bot na sessão
-    st.session_state.data_loaded = True
-    # --- FIM DA MUDANÇA ---
+with st.spinner("Carregando dados e inicializando IA..."):
+    if 'data_loaded' not in st.session_state:
+        print("INFO: Carregando dados pela primeira vez...")
+        df_enriched = load_processed_data()
+        chroma_collection = load_chromadb_collection(df_enriched)
+        rag_bot = load_rag_bot(chroma_collection)  # Chama a nova função
+        st.session_state.df_enriched = df_enriched
+        st.session_state.chroma_collection = chroma_collection
+        st.session_state.rag_bot = rag_bot  # Salva o bot na sessão
+        st.session_state.data_loaded = True
+        # --- FIM DA MUDANÇA ---
 
 print("INFO: Dados e modelos carregados e salvos no session_state.")
 

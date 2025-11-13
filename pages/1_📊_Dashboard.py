@@ -3,9 +3,11 @@ import streamlit as st
 import pandas as pd
 from src.analysis.metrics import calculate_kpis
 from src.visualization.charts import (
+    plot_performance_over_time,
     plot_sentiment_distribution,
     plot_semantic_pie_chart,
     plot_wordcloud_for_supplier
+
 )
 
 # Configuração da página
@@ -27,6 +29,10 @@ col1, col2, col3 = st.columns(3)
 col1.metric("Total de Feedbacks", kpis["total_feedbacks"])
 col2.metric("Feedbacks Positivos", kpis["count_positivo"])
 col3.metric("Taxa de Positividade", f"{kpis['pct_positivo']:.1f}%")
+
+st.markdown("---")
+
+plot_performance_over_time(df)
 
 st.markdown("---")
 
