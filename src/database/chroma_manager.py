@@ -23,7 +23,7 @@ def initialize_chromadb(df_enriched: pd.DataFrame):
     client = chromadb.Client()
 
     # Simplesmente cria a coleção.
-    collection = client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=embedding_function)
+    collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
     # 2. Remove as linhas em que a geração de embeddings falhou
     df_valid = df_enriched[df_enriched['embedding'].apply(lambda x: isinstance(x, list) and len(x) > 0)].copy()
