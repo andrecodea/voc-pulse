@@ -38,28 +38,28 @@ We are currently transitioning VoC Pulse from a **Descriptive Tool** (what happe
 
 ### 📅 Week 1: Foundation & Refactoring
 * **Objective:** Pay technical debt and prepare the environment for scale.
-* [ ] **Clean Environment:** Migrate to a clean `venv` with Python 3.11.
-* [ ] **Official RAG Stack:** Replace the "Manual RAG" hack with the official **LangChain** implementation (`RetrievalQA`) to enable memory and tools.
-* [ ] **Observability:** Integrate **LangSmith** for tracing Chain-of-Thought and debugging latency.
-* [ ] **Testing:** Implement unit tests (`pytest`) for critical metrics and data ingestion logic.
+* - [ ] **Clean Environment:** Migrate to a clean `venv` with Python 3.11.
+* - [ ] **Official RAG Stack:** Replace the "Manual RAG" hack with the official **LangChain** implementation (`RetrievalQA`) to enable memory and tools.
+* - [ ] **Observability:** Integrate **LangSmith** for tracing Chain-of-Thought and debugging latency.
+* - [ ] **Testing:** Implement unit tests (`pytest`) for critical metrics and data ingestion logic.
 
 ### 📅 Week 2: Data Engineering & Automation (CI/CD)
 * **Objective:** Scale data volume and automate ingestion.
-* [ ] **Dataset V2:** Expand synthetic data to **1,000+ rows**, adding temporal patterns and new columns (`Event_Type`, `Contract_Value`).
-* [ ] **GitHub Actions:** Deploy a CI/CD pipeline (`update_data.yml`) to execute the AI enrichment script automatically (Cron Job: Monthly), removing manual execution.
+* - [ ] **Dataset V2:** Expand synthetic data to **1,000+ rows**, adding temporal patterns and new columns (`Event_Type`, `Contract_Value`).
+* - [ ] **GitHub Actions:** Deploy a CI/CD pipeline (`update_data.yml`) to execute the AI enrichment script automatically (Cron Job: Monthly), removing manual execution.
 
 ### 📅 Week 3: Predictive Intelligence (Machine Learning)
 * **Objective:** Implement the "Risk Calculator".
-* [ ] **Model Training:** Train a **RandomForestClassifier** (Scikit-Learn) to predict the probability of negative feedback.
+* - [ ] **Model Training:** Train a **RandomForestClassifier** (Scikit-Learn) to predict the probability of negative feedback.
     * *Features:* Supplier ID, Event Type, Value.
     * *Target:* Negative Sentiment.
-* [ ] **New UI:** Add a `Predictions` page where managers can simulate scenarios (e.g., "If I hire DJ 'X' for a Wedding, what is the risk?").
+* - [ ] **New UI:** Add a `Predictions` page where managers can simulate scenarios (e.g., "If I hire DJ 'X' for a Wedding, what is the risk?").
 
 ### 📅 Week 4: The Cognitive Agent (ReAct)
 * **Objective:** Transform the Chatbot into an Autonomous Agent.
-* [ ] **Tool Creation:** Wrap the RAG pipeline and the ML Model into LangChain **Tools**.
-* [ ] **ReAct Framework:** Implement a Reason-Action Agent that can decide: *"Should I look up history (RAG) or calculate risk (ML) to answer this user?"*
-* [ ] **Real-time Learning:** Create a tool allowing the Agent to ingest new feedback into ChromaDB in real-time.
+* - [ ] **Tool Creation:** Wrap the RAG pipeline and the ML Model into LangChain **Tools**.
+* - [ ] **ReAct Framework:** Implement a Reason-Action Agent that can decide: *"Should I look up history (RAG) or calculate risk (ML) to answer this user?"*
+* - [ ] **Real-time Learning:** Create a tool allowing the Agent to ingest new feedback into ChromaDB in real-time.
 
 ---
 
