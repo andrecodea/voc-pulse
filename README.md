@@ -133,14 +133,6 @@ This project currently uses a 2-phase "Smart Hack" architecture to ensure sub-3-
 
 ---
 
-## ✍️ Authors
-
-* **André Luiz de Souza Marinho Codea** - (Lead: Architecture, AI Functionalities, WebApp, GitHub Documentation)
-* **João Gabriel Lima Cochet Agra** - (Data: Fictional Dataset, Matplotlib & Seaborn Plot Functions)
-* **Marcos Antônio de Lana Santos** - (Data: Fictional Dataset, Matplotlib & Seaborn Plot Functions)
-* **Jorge Lopes da Rocha Neto** - (Technical Documentation)
-* **Gabriel de Lira Teixeira Ferreira** - (Technical Documentation)
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
