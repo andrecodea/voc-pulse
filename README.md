@@ -32,35 +32,126 @@ It automatically processes text to extract three key data points: **Sentiment** 
 
 ---
 
-## 🗺️ Product Roadmap: Journey to a Cognitive System (V2)
+## 🗺️ VoC Agent: Roadmap for RAG System with Agents
 
-We are currently transitioning VoC Pulse from a **Descriptive Tool** (what happened?) to a **Prescriptive & Cognitive System** (what will happen and what to do?).
+**Transforming event reviews into actionable insights through an intelligent agent.**
 
-### 📅 Week 1: Foundation & Refactoring
-* **Objective:** Pay technical debt and prepare the environment for scale.
-* - [ ] **Clean Environment:** Migrate to a clean `venv` with Python 3.11.
-* - [ ] **Official RAG Stack:** Replace the "Manual RAG" hack with the official **LangChain** implementation (`RetrievalQA`) to enable memory and tools.
-* - [ ] **Observability:** Integrate **LangSmith** for tracing Chain-of-Thought and debugging latency.
-* - [ ] **Testing:** Implement unit tests (`pytest`) for critical metrics and data ingestion logic.
+---
 
-### 📅 Week 2: Data Engineering & Automation (CI/CD)
-* **Objective:** Scale data volume and automate ingestion.
-* - [ ] **Dataset V2:** Expand synthetic data to **1,000+ rows**, adding temporal patterns and new columns (`Event_Type`, `Contract_Value`).
-* - [ ] **GitHub Actions:** Deploy a CI/CD pipeline (`update_data.yml`) to execute the AI enrichment script automatically (Cron Job: Monthly), removing manual execution.
+### 📅 Week 1: Data Foundation & Basic RAG
 
-### 📅 Week 3: Predictive Intelligence (Machine Learning)
-* **Objective:** Implement the "Risk Calculator".
-* - [ ] **Model Training:** Train a **RandomForestClassifier** (Scikit-Learn) to predict the probability of negative feedback.
-    * *Features:* Supplier ID, Event Type, Value.
-    * *Target:* Negative Sentiment.
-* - [ ] **New UI:** Add a `Predictions` page where managers can simulate scenarios (e.g., "If I hire DJ 'X' for a Wedding, what is the risk?").
+**Goal:** Prepare data and establish the semantic retrieval pipeline.
 
-### 📅 Week 4: The Cognitive Agent (ReAct)
-* **Objective:** Transform the Chatbot into an Autonomous Agent.
-* - [ ] **Tool Creation:** Wrap the RAG pipeline and the ML Model into LangChain **Tools**.
-* - [ ] **ReAct Framework:** Implement a Reason-Action Agent that can decide: *"Should I look up history (RAG) or calculate risk (ML) to answer this user?"*
-* - [ ] **Real-time Learning:** Create a tool allowing the Agent to ingest new feedback into ChromaDB in real-time.
+* [ ] **Pre-processing:**
 
+  * Run `scripts/preprocess.py` to generate `reviews_processed.csv`
+  * Add `Event_Date` (last 6 months) and `sentiment` classification (TextBlob)
+  * Validate distribution: ~33% Positive/Negative/Mixed
+
+* [ ] **ChromaDB Setup:**
+
+  * Implement `backend/app/db/chroma_client.py` (client + collection)
+  * Populate vector store with processed reviews + metadata (date, sentiment, vendors)
+  * Test basic queries: "problems with catering", "praise for the DJ"
+
+* [ ] **Retrieval Tool (first tool):**
+
+  * Create `backend/app/tools/retrieval_tool.py`
+  * Implement filters: `{"sentiment": "Negative", "date": {"$gte": "2024-12-01"}}`
+  * Manual test: retrieve negative reviews from the past 30 days
+
+**Deliverable:** Functional ChromaDB with 1000 reviews + tested basic retrieval.
+
+---
+
+### 📅 Week 2: ReAct Agent + Visualization Tools
+
+**Goal:** Build an autonomous agent capable of analyzing VoC and generating plots.
+
+* [ ] **ReAct Agent (Strands or LangChain):**
+
+  * Implement `backend/app/agent.py` with local Ollama
+  * Prompt engineering: "You are an event VoC analyst. Use tools to answer."
+  * Test CoT: agent explains reasoning before using tools
+
+* [ ] **Plot Tools (3 types):**
+
+  * `plot_sentiment_tool.py`: Bar chart (Positive/Negative/Mixed)
+  * `plot_trends_tool.py`: Sentiment timeline by month
+  * `plot_themes_tool.py`: Wordcloud or topic count (DJ vs Catering)
+
+* [ ] **Observability (LangFuse):**
+
+  * Integrate callbacks to track: tool calls, latency, tokens
+  * LangFuse dashboard: monitor agent response quality
+
+**Deliverable:** Agent responds to "Show sentiment about DJs" → retrieval + automatic plot.
+
+---
+
+### 📅 Week 3: FastAPI + Agent Endpoints
+
+**Goal:** Expose the agent through a REST API for frontend consumption.
+
+* [ ] **FastAPI Backend:**
+
+  * `backend/app/main.py`: `POST /api/chat` endpoint (receives question, returns response + plots)
+  * `backend/app/config.py`: Centralize settings (ChromaDB path, Ollama URL)
+  * Health check: `GET /health` validates ChromaDB + Ollama
+
+* [ ] **Plot Serialization:**
+
+  * Tools return Plotly JSON (`fig.to_dict()`)
+  * API response: `{"text": "...", "plot": {...}, "sources": [...]}`
+
+* [ ] **CORS + Docs:**
+
+  * Enable CORS for Gradio to consume API
+  * Auto-generated Swagger available at `/docs`
+
+**Deliverable:** API running on `localhost:8000`, testable via Postman/cURL.
+
+---
+
+### 📅 Week 4: Gradio Frontend + Full Loop
+
+**Goal:** Conversational interface for PM/CS teams to query VoC insights.
+
+* [ ] **Gradio UI:**
+
+  * `frontend/app.py`: Chat consuming `POST /api/chat`
+  * Render Plotly charts in side panel
+  * Conversation history persisted per session
+
+* [ ] **UX Refinements:**
+
+  * Loading indicator while agent "thinks"
+  * Show intermediate steps (tool calls) for transparency
+  * "New conversation" button (reset context)
+
+* [ ] **Local Deployment:**
+
+  * Docker Compose: ChromaDB + Ollama + Backend + Frontend
+  * README with setup instructions
+
+**Deliverable:** End-to-end system functional.
+PM asks *"What were the main issues in December?"* → agent returns analysis + charts.
+
+---
+
+### 🎯 Validation Milestones
+
+**MVP 1 (Week 2):** Standalone agent (CLI) responds using retrieval + plots.
+**MVP 2 (Week 3):** API exposed and testable via Swagger.
+**MVP 3 (Week 4):** Full Gradio interface, demo-ready for stakeholders.
+
+---
+
+### 📈 Future Improvements (Post-MVP)
+
+* **Week 5+:** Prediction tool (scikit-learn) to detect high-risk events
+* **Week 6+:** Automated ingestion via webhook (`POST /api/ingest`)
+* **Week 7+:** Multi-agent system: one for analysis, one for recommendations
 ---
 
 ## 🏛️ Architecture Diagram (V1)
